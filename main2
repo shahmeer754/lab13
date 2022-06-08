@@ -1,0 +1,23 @@
+@Test
+public void testMirror() throws Exception {
+  RecordingListener recordingCallback = new RecordingListener();
+  Profiler profiler = new Profiler(new FakeTicker());
+  profiler.init(ImmutableList.of(recordingCallback));
+  options.general.withProfiler(profiler);
+
+  Migration mirror = createMirrorObj();
+  mirror.run(workdir, ImmutableList.of());
+  String orig = originRepo.git(originRepo.getGitDir(), "show-ref").getStdout();
+  String dest = destRepo.git(destRepo.getGitDir(), "show-ref").getStdout();
+  assertThat(dest).isEqualTo(orig);
+
+  recordingCallback
+      .assertMatchesNext(EventType.START, "//copybara")
+      .assertMatchesNext(EventType.START, "//copybara/run/default")
+      .assertMatchesNext(EventType.START, "//copybara/run/default/fetch")
+      .assertMatchesNext(EventType.END, "//copybara/run/default/fetch")
+      .assertMatchesNext(EventType.START, "//copybara/run/default/push")
+      .assertMatchesNext(EventType.END, "//copybara/run/default/push")
+      .assertMatchesNext(EventType.END, "//copybara/run/default");
+}
+ 
